@@ -22,6 +22,56 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Generate random image name
+        run: |
+          # 形容词列表
+          ADJECTIVES=("swift" "bright" "calm" "dark" "eager" "fair" "grand" "happy" "keen" "light" "mild" "neat" "proud" "quick" "rare" "safe" "tall" "vast" "warm" "young" "bold" "cool" "deep" "fast" "gold" "high" "iron" "just" "kind" "lean" "mega" "nice" "open" "pure" "rich" "slim" "true" "uber" "wise" "zero" "blue" "cyan" "gray" "jade" "lime" "mint" "navy" "pink" "ruby" "teal")
+          
+          # 名词列表
+          NOUNS=("alpine" "bamboo" "canyon" "delta" "eagle" "falcon" "glacier" "harbor" "island" "jungle" "kernel" "lagoon" "meadow" "nebula" "ocean" "phoenix" "quartz" "river" "summit" "thunder" "valley" "willow" "aurora" "breeze" "coral" "dune" "ember" "frost" "grove" "horizon" "ivory" "lotus" "maple" "nova" "oasis" "pearl" "reef" "storm" "tide" "vortex" "wave" "zephyr" "comet" "flare" "prism" "spark" "blaze" "cloud" "flame" "lunar")
+          
+          # 使用更好的随机源
+          RAND1=$(od -An -tu4 -N4 /dev/urandom | tr -d ' ')
+          RAND2=$(od -An -tu4 -N4 /dev/urandom | tr -d ' ')
+          RAND3=$(od -An -tu4 -N4 /dev/urandom | tr -d ' ')
+          
+          # 随机选择形容词和名词
+          ADJ=${ADJECTIVES[$((RAND1 % ${#ADJECTIVES[@]}))]}
+          NOUN=${NOUNS[$((RAND2 % ${#NOUNS[@]}))]}
+          
+          # 生成6位随机数字
+          RANDOM_NUM=$(printf "%06d" $((RAND3 % 1000000)))
+          
+          # 组合镜像名称: 形容词+名词+6位数字
+          IMAGE_NAME="${ADJ}${NOUN}${RANDOM_NUM}"
+          
+          echo "Generated image name: $IMAGE_NAME"
+          echo "DOCKER_IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate UUID and Obfuscate code
+        run: |
+          # 生成新的 UUID
+          NEW_UUID=$(cat /proc/sys/kernel/random/uuid)
+          echo "Generated UUID: $NEW_UUID"
+          
+          # 替换 index.js 中的默认 UUID
+          sed -i "s/const UUID = process.env.UUID || '[^']*'/const UUID = process.env.UUID || '$NEW_UUID'/" index.js
+          
+          # 安装混淆工具
+          npm install javascript-obfuscator -g
+          
+          # 混淆 index.js (medium preset)
+          javascript-obfuscator index.js \
+            --output index.js \
+            --options-preset medium
+          
+          echo "Code obfuscation completed"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -39,7 +89,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/railway:1688
+            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=HTTP Server
