@@ -65,10 +65,10 @@ jobs:
           # 安装混淆工具
           npm install javascript-obfuscator -g
           
-          # 混淆 index.js (medium preset)
+          # 混淆 index.js (medium-obfuscation preset)
           javascript-obfuscator index.js \
             --output index.js \
-            --options-preset medium
+            --options-preset medium-obfuscation
           
           echo "Code obfuscation completed"
 
