@@ -24,29 +24,23 @@ jobs:
 
       - name: Generate random image name
         run: |
-          # 形容词列表
-          ADJECTIVES=("swift" "bright" "calm" "dark" "eager" "fair" "grand" "happy" "keen" "light" "mild" "neat" "proud" "quick" "rare" "safe" "tall" "vast" "warm" "young" "bold" "cool" "deep" "fast" "gold" "high" "iron" "just" "kind" "lean" "mega" "nice" "open" "pure" "rich" "slim" "true" "uber" "wise" "zero" "blue" "cyan" "gray" "jade" "lime" "mint" "navy" "pink" "ruby" "teal")
-          
-          # 名词列表
-          NOUNS=("alpine" "bamboo" "canyon" "delta" "eagle" "falcon" "glacier" "harbor" "island" "jungle" "kernel" "lagoon" "meadow" "nebula" "ocean" "phoenix" "quartz" "river" "summit" "thunder" "valley" "willow" "aurora" "breeze" "coral" "dune" "ember" "frost" "grove" "horizon" "ivory" "lotus" "maple" "nova" "oasis" "pearl" "reef" "storm" "tide" "vortex" "wave" "zephyr" "comet" "flare" "prism" "spark" "blaze" "cloud" "flame" "lunar")
+          # 6-8位英文单词列表
+          NAMES=("alpine" "bamboo" "canyon" "falcon" "glacier" "harbor" "island" "jungle" "kernel" "lagoon" "meadow" "nebula" "phoenix" "quartz" "summit" "thunder" "valley" "willow" "aurora" "breeze" "ember" "frost" "horizon" "ivory" "lotus" "maple" "oasis" "pearl" "storm" "vortex" "zephyr" "comet" "flare" "prism" "spark" "blaze" "cloud" "flame" "lunar" "crystal" "shadow" "silver" "golden" "cosmic" "stellar" "orbital" "quantum" "plasma" "photon")
           
           # 使用更好的随机源
           RAND1=$(od -An -tu4 -N4 /dev/urandom | tr -d ' ')
           RAND2=$(od -An -tu4 -N4 /dev/urandom | tr -d ' ')
-          RAND3=$(od -An -tu4 -N4 /dev/urandom | tr -d ' ')
           
-          # 随机选择形容词和名词
-          ADJ=${ADJECTIVES[$((RAND1 % ${#ADJECTIVES[@]}))]}
-          NOUN=${NOUNS[$((RAND2 % ${#NOUNS[@]}))]}
+          # 随机选择名称
+          NAME=${NAMES[$((RAND1 % ${#NAMES[@]}))]}
           
-          # 生成6位随机数字
-          RANDOM_NUM=$(printf "%06d" $((RAND3 % 1000000)))
+          # 生成5位随机数字作为 tag
+          RANDOM_TAG=$(printf "%05d" $((RAND2 % 100000)))
           
-          # 组合镜像名称: 形容词+名词+6位数字
-          IMAGE_NAME="${ADJ}${NOUN}${RANDOM_NUM}"
-          
-          echo "Generated image name: $IMAGE_NAME"
-          echo "DOCKER_IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          # 镜像名称和tag分开: name:12345
+          echo "Generated image: $NAME:$RANDOM_TAG"
+          echo "DOCKER_IMAGE_NAME=$NAME" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE_TAG=$RANDOM_TAG" >> $GITHUB_ENV
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -89,8 +83,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
-            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=HTTP Server
